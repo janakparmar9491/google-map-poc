@@ -1,95 +1,158 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+import { type CSSProperties, memo, useCallback, useState } from "react";
+import PropTypes from "prop-types";
+import {
+  GoogleMap,
+  OverlayViewF,
+  MarkerF,
+  OVERLAY_MOUSE_TARGET,
+  MARKER_LAYER,
+  useJsApiLoader
+} from "@react-google-maps/api";
 
-export default function Home() {
+const mapCenter = {
+  lat: 0,
+  lng: -180,
+};
+
+const containerStyle = {
+  width: "1000px",
+  height: "600px",
+};
+
+const contentStyles = {
+  background: `white`,
+  border: `1px solid #CCC`,
+  padding: 15,
+};
+
+function centerOverlayView(
+  width: number,
+  height: number
+): { x: number; y: number } {
+  return {
+    x: -(width / 2),
+    y: -(height / 2),
+  };
+}
+
+interface Props {
+  styles: {
+    container: CSSProperties | undefined;
+  };
+}
+
+function ExampleOverlayView({ styles }: Props): JSX.Element {
+    const { isLoaded } = useJsApiLoader({
+        id: "google-map-script",
+        googleMapsApiKey: `${process.env.NEXT_PUBLIC_GOOGLE_MAP_API_KEY}`,
+      });
+  const [isShown, setIsShown] = useState(false);
+
+  const changeIsShown = useCallback(() => {
+    setIsShown(!isShown);
+  }, [isShown]);
+
+  const [overlayPane, setOverlayPane] = useState(OVERLAY_MOUSE_TARGET);
+  const clickHandler = useCallback(() => {
+    alert("You clicked overlay view");
+  }, []);
+
+  const [overlayPosition, setOverlayPosition] = useState(mapCenter);
+
+  const randomOverlayPosition = useCallback(() => {
+    setOverlayPosition({
+      lat: mapCenter.lat + Math.random() * -10 + 20,
+      lng: mapCenter.lng + Math.random() * -10 + 20,
+    });
+  }, []);
+
+  const loadCallback = useCallback((overlayView: any) => {
+    console.log("OverlayView onLoad: ", overlayView);
+  }, []);
+
+  const unmountCallback = useCallback(
+    (overlayView: any) => {
+      console.log("OverlayView onUnmount", overlayView);
+    },
+    []
+  );
+
+  const setToMarkerLayerPane = useCallback(() => {
+    setOverlayPane(MARKER_LAYER);
+  }, []);
+
+  const setToMouseTargetPane = useCallback(() => {
+    setOverlayPane(OVERLAY_MOUSE_TARGET);
+  }, []);
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
+    <div className="map">
+      <div className="map-container">
+        {isLoaded ? (<GoogleMap
+          mapContainerStyle={containerStyle}
+          zoom={2}
+          center={mapCenter}
+        >
+          <MarkerF position={mapCenter} onClick={changeIsShown} />
+
+          {isShown ? (
+            <OverlayViewF
+              position={overlayPosition}
+              mapPaneName={overlayPane}
+              onLoad={loadCallback}
+              onUnmount={unmountCallback}
+              getPixelPositionOffset={centerOverlayView}
+            >
+              <button
+                type="button"
+                style={contentStyles}
+                onClick={clickHandler}
+              >
+                <h1>OverlayView</h1>
+              </button>
+            </OverlayViewF>
+          ) : null}
+        </GoogleMap>) : (<></>)}
+        
       </div>
 
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
+      <div className="form-group custom-control custom-radio">
+        <input
+          id="MARKER_LAYER"
+          className="custom-control-input"
+          type="radio"
+          name="overlayPane"
+          checked={overlayPane === MARKER_LAYER}
+          onChange={setToMarkerLayerPane}
         />
+        <label className="custom-control-label" htmlFor="MARKER_LAYER">
+          Mount to markerLayer(can&apos;t receive DOM event)
+        </label>
+      </div>
+      <div className="form-group custom-control custom-radio">
+        <input
+          id="OVERLAY_MOUSE_TARGET"
+          className="custom-control-input"
+          type="radio"
+          name="overlayPane"
+          checked={overlayPane === OVERLAY_MOUSE_TARGET}
+          onChange={setToMouseTargetPane}
+        />
+        <label className="custom-control-label" htmlFor="OVERLAY_MOUSE_TARGET">
+          Mount to overlay overlayMouseTarget
+        </label>
       </div>
 
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+      <button
+        className="btn btn-primary"
+        type="button"
+        onClick={randomOverlayPosition}
+      >
+        Change overlay position
+      </button>
+    </div>
   );
 }
+
+export default memo(ExampleOverlayView);
